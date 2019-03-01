@@ -3,8 +3,16 @@ import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+import configparser
 
+config = configparser.ConfigParser()
+config.read('config.ini')
 day_in_epochtime = 86400
+
+MEETUP_API_KEY = config['DEFAULT']['MEETUP_API_KEY']
+GMAIL_API_KEY = config['DEFAULT']['GMAIL_API_KEY']
+RECIPIENT_EMAIL = config['DEFAULT']['RECIPIENT_EMAIL']
+SENDER_EMAIL = config['DEFAULT']['SENDER_EMAIL']
 
 
 class Meetup_Basketball(object):
@@ -29,8 +37,7 @@ class Meetup_Basketball(object):
     def get_events_for_next_week(self, response):
         upcoming_events = []        
         for event in range(len(response['results'])):
-            epochtime = response['results'][event]['time']            
-            # Event is in less than 7 days      
+            epochtime = response['results'][event]['time']    
             if(epochtime / 1000 - time.time() < (day_in_epochtime * 14)):
                 upcoming_events.append(response['results'][event])
         return upcoming_events
@@ -52,9 +59,9 @@ class Meetup_Basketball(object):
         s = smtplib.SMTP('smtp.gmail.com', 587)        
         msg = MIMEMultipart()          
         s.starttls()
-        s.login('callummelia@gmail.com', 'ogexrwgndmowbzwt')      
-        msg['From'] = "callummelia@gmail.com"
-        msg['To'] = "callummelia@gmail.com"
+        s.login(SENDER_EMAIL, GMAIL_API_KEY)      
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = RECIPIENT_EMAIL
         msg['Subject'] = 'Meetup Spot Available - ' + event['name']
         message = 'Spot available ' + event['event_url'] + "\n" + payment_url
         msg.attach(MIMEText(message, 'plain'))
@@ -78,7 +85,7 @@ class Meetup_Basketball(object):
         try:
             headers = {"content-type": "application/json"}
             event_id = event['id']
-            params = {'event_id': event_id, 'agree_to_refund': 'true','rsvp': 'yes', 'key': 'b4f1717554e5b61f150562f2b5a2a'}
+            params = {'event_id': event_id, 'agree_to_refund': 'true','rsvp': 'yes', 'key': MEETUP_API_KEY}
             rsvp = requests.post(url="https://api.meetup.com/2/rsvp", params=params)
             json_response = rsvp.json()
             print(json_response['payment_redirect'])   
